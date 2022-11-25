@@ -1,32 +1,17 @@
 use std::{error::Error};
 use std::fs;
 //use std::thread;
-use opentelemetry::sdk::export::trace::stdout;
-use tracing::{debug, info, warn, span, Level, event, instrument, info_span};
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::Registry;
 
-use lazy_static::lazy_static;
-use prometheus::{ IntCounterVec, register_int_counter_vec };
+use tracing::{info, warn, span, Level, event, instrument, info_span};
+
+//use lazy_static::lazy_static;
+//use prometheus::{ IntCounterVec, register_int_counter_vec };
 //use prometheus_static_metric;
 
-lazy_static! {
-    pub static ref LETTER_COUNTER: IntCounterVec =
-        register_int_counter_vec!("letter_counter_vec", "Letter Counter in line", &["line", "letter"])
-        .expect("Can't create a metric");
-}
-
-// use metrics::{counter, histogram};
-//
-// pub fn process(query: &str) -> u64 {
-//     let start = Instant::now();
-//     let row_count = run_query(query);
-//     let delta = start.elapsed();
-//
-//     histogram!("process.query_time", delta);
-//     counter!("process.query_row_count", row_count);
-//
-//     row_count
+// lazy_static! {
+//     pub static ref LETTER_COUNTER: IntCounterVec =
+//         register_int_counter_vec!("letter_counter_vec", "Letter Counter in line", &["line", "letter"])
+//         .expect("Can't create a metric");
 // }
 
 
@@ -47,28 +32,20 @@ impl Config {
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let tracer = stdout::new_pipeline().install_simple();
-    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    
 
     event!(Level::INFO, "something happened");
 
     let span = span!(Level::INFO, "span_of_run_function");
     let _guard = span.enter();
     event!(Level::DEBUG, "something happened inside my_span");
-    //let mut query_count_vector = Vec::new();
-    // let mut loop_counter = 0;
-    // loop {
-    //     LETTER_COUNTER.with_label_values(&["testt","testt"]).inc();
-    //     loop_counter += 1;
-    //     if loop_counter >= 10 {break;}
-    // }
-    let contents = info_span!("txt.parse").in_scope(|| fs::read_to_string(config.filename))?;
+    let contents = info_span!("txt.parse").in_scope(|| fs::read_to_string(&config.filename))?;
     for line in search(&config.query, &contents) {
         //LETTER_COUNTER.with_label_values(&[&line, &config.query])
         //.inc_by(line.matches(&config.query).count().try_into().unwrap());
         //query_count_vector.push(line.matches(&config.query).count());
         span!(Level::TRACE, "liene", line, "{}", line.matches(&config.query).count());
-        println!("{}, occurs {} times", line, line.matches(&config.query).count());
+        info!("{}, occurs {} times", line, line.matches(&config.query).count());
         //println!("LETTER_COUNTER[{}, {}] = {}",&line, &config.query,  LETTER_COUNTER.with_label_values(&[&line, &config.query]).get());
     }
 
